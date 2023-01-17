@@ -1,17 +1,17 @@
 {-# LANGUAGE BlockArguments #-}
 module Game (newGameStart) where
 
-import           Control.Monad.State.Strict (MonadIO (..),
-                                             MonadState (get, put), StateT,
-                                             execStateT, unless)
-import           System.IO                  (hFlush, stdout)
-import           System.Random.Stateful     (applyAtomicGen, globalStdGen,
-                                             uniformR)
-import           Text.Read                  (readMaybe)
+import           Control.Monad.RWS.Strict (MonadIO (liftIO), MonadReader (ask),
+                                           RWST, execRWST, modify', unless)
+import           System.IO                (hFlush, stdout)
+import           System.Random.Stateful   (applyAtomicGen, globalStdGen,
+                                           uniformR)
+import           Text.Read                (readMaybe)
 
-data GameState = GameState Integer Integer
+type SecretNumber = Integer
+type GuessState = Integer
 
-type GameM m a = StateT GameState m a
+type GameM m a = RWST SecretNumber () GuessState m a
 
 giveHint :: MonadIO m => Ordering -> m ()
 giveHint ord = do
@@ -25,15 +25,14 @@ giveHint ord = do
 
 incrementGuessState :: GameM IO ()
 incrementGuessState = do
-  (GameState s g) <- get
-  put (GameState s (g + 1))
+  modify' (+ 1)
   return ()
 
 checkGuess :: Integer -> GameM IO Bool
-checkGuess g = do
+checkGuess guess = do
   incrementGuessState
-  (GameState s _) <- get
-  let ord = compare g s
+  secretNumber <- ask
+  let ord = compare guess secretNumber
   giveHint ord
   return $ ord == EQ
 
@@ -49,13 +48,12 @@ gameLoop = do
   guess <- attemptGuess
   unless guess gameLoop
 
-mkRandomNewGame :: IO GameState
-mkRandomNewGame = do
-  rng <- applyAtomicGen (uniformR (1, 100)) globalStdGen :: IO Integer
-  return (GameState rng 0)
+mkRandomInteger :: IO SecretNumber
+mkRandomInteger = do
+  applyAtomicGen (uniformR (1, 100)) globalStdGen
 
 newGameStart :: IO ()
 newGameStart = do
-  gameState <- mkRandomNewGame
-  (GameState _ guesses) <- execStateT gameLoop gameState
+  secretNumber <- mkRandomInteger
+  (guesses, _) <- execRWST gameLoop secretNumber 0
   putStrLn $ unwords ["\nIt took you", show guesses, "guesses!"]
