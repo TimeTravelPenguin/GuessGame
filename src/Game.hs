@@ -11,7 +11,7 @@ import           Text.Read                  (readMaybe)
 
 data GameState = GameState Integer Integer
 
-type GuessM m a = StateT GameState m a
+type GameM m a = StateT GameState m a
 
 giveHint :: MonadIO m => Ordering -> m ()
 giveHint ord = do
@@ -23,13 +23,13 @@ giveHint ord = do
     >> hFlush stdout
   return ()
 
-incrementGuessState :: GuessM IO ()
+incrementGuessState :: GameM IO ()
 incrementGuessState = do
   (GameState s g) <- get
   put (GameState s (g + 1))
   return ()
 
-checkGuess :: Integer -> GuessM IO Bool
+checkGuess :: Integer -> GameM IO Bool
 checkGuess g = do
   incrementGuessState
   (GameState s _) <- get
@@ -37,14 +37,14 @@ checkGuess g = do
   giveHint ord
   return $ ord == EQ
 
-attemptGuess :: GuessM IO Bool
+attemptGuess :: GameM IO Bool
 attemptGuess = do
   liftIO $ putStr "\nGuess my secret number between 1-100: " >> hFlush stdout
   guess <- liftIO (readMaybe <$> getLine :: IO (Maybe Integer))
   let err = liftIO $ putStrLn "Invalid input, try again..."
   maybe (err >> attemptGuess) checkGuess guess
 
-gameLoop :: GuessM IO ()
+gameLoop :: GameM IO ()
 gameLoop = do
   guess <- attemptGuess
   unless guess gameLoop
