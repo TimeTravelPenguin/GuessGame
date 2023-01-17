@@ -13,15 +13,10 @@ type GuessState = Integer
 
 type GameM m a = RWST SecretNumber () GuessState m a
 
-giveHint :: MonadIO m => Ordering -> m ()
-giveHint ord = do
-  liftIO $ putStrLn
-    case ord of
-      LT -> "Higher..."
-      GT -> "Smaller..."
-      EQ -> "You got it!"
-    >> hFlush stdout
-  return ()
+guessHint :: Ordering -> String
+guessHint LT = "Higher..."
+guessHint GT = "Smaller..."
+guessHint EQ = "You got it!"
 
 incrementGuessState :: GameM IO ()
 incrementGuessState = do
@@ -33,7 +28,7 @@ checkGuess guess = do
   incrementGuessState
   secretNumber <- ask
   let ord = compare guess secretNumber
-  giveHint ord
+  liftIO $ putStrLn (guessHint ord) >> hFlush stdout
   return $ ord == EQ
 
 attemptGuess :: GameM IO Bool
