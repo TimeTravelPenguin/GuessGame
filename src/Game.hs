@@ -1,4 +1,6 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Game (newGameStart) where
 
 import           Control.Monad.RWS.Strict (MonadIO (liftIO), MonadReader (ask),
@@ -12,6 +14,12 @@ type SecretNumber = Integer
 type GuessState = Integer
 
 type GameM m a = RWST SecretNumber () GuessState m a
+
+promptInput :: String -> IO String
+promptInput message = do
+    putStr message
+    hFlush stdout
+    getLine
 
 guessHint :: Ordering -> String
 guessHint LT = "Higher..."
@@ -28,13 +36,12 @@ checkGuess guess = do
   incrementGuessState
   secretNumber <- ask
   let ord = compare guess secretNumber
-  liftIO $ putStrLn (guessHint ord) >> hFlush stdout
+  liftIO $ putStrLn (guessHint ord)
   return $ ord == EQ
 
 attemptGuess :: GameM IO Bool
 attemptGuess = do
-  liftIO $ putStr "\nGuess my secret number between 1-100: " >> hFlush stdout
-  guess <- liftIO (readMaybe <$> getLine :: IO (Maybe Integer))
+  guess :: Maybe Integer <- liftIO $ readMaybe <$> promptInput "\nGuess my secret number between 1-100: "
   let err = liftIO $ putStrLn "Invalid input, try again..."
   maybe (err >> attemptGuess) checkGuess guess
 
