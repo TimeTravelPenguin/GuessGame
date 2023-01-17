@@ -25,7 +25,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Game
   other-modules:
       Paths_GuessGame
   hs-source-dirs:
