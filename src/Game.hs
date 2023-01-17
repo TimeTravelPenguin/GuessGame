@@ -49,13 +49,13 @@ gameLoop = do
   guess <- attemptGuess
   unless guess gameLoop
 
+mkRandomNewGame :: IO GameState
+mkRandomNewGame = do
+  rng <- applyAtomicGen (uniformR (1, 100)) globalStdGen :: IO Integer
+  return (GameState rng 0)
+
 newGameStart :: IO ()
 newGameStart = do
   gameState <- mkRandomNewGame
   (GameState _ guesses) <- execStateT gameLoop gameState
   putStrLn $ unwords ["\nIt took you", show guesses, "guesses!"]
-
-mkRandomNewGame :: IO GameState
-mkRandomNewGame = do
-  rng <- applyAtomicGen (uniformR (1, 100)) globalStdGen :: IO Integer
-  return (GameState rng 0)
