@@ -1,5 +1,4 @@
 {-# LANGUAGE BlockArguments      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Game (newGameStart) where
 
@@ -41,7 +40,7 @@ checkGuess guess = do
 
 attemptGuess :: GameM IO Bool
 attemptGuess = do
-  guess :: Maybe Integer <- liftIO $ readMaybe <$> promptInput "\nGuess my secret number between 1-100: "
+  guess <- liftIO $ readMaybe <$> promptInput "\nGuess my secret number between 1-100: "
   let err = liftIO $ putStrLn "Invalid input, try again..."
   maybe (err >> attemptGuess) checkGuess guess
 
